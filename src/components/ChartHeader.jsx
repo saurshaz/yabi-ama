@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDashboard, generatePDF }) => (
+const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDashboard, generatePDF, option, setEditingChartOption }) => (
   <div className="flex justify-between items-center p-2 bg-[#f8f9fa] rounded-t">
     <h3 className="font-roboto text-lg">{title}</h3>
     <div className="flex gap-4">
@@ -36,8 +36,8 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
         <i
           className="fas fa-chart-line text-green-500 cursor-pointer h-7 w-7"
           onMouseEnter={() => {
-            setShowChartTypes(true);
-            setSelectedChart(chartId);
+            // setShowChartTypes(true);
+            // setSelectedChart(chartId);
           }}
         ></i>
         <span className="text-xs">Switch</span>

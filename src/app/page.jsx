@@ -2,13 +2,12 @@
 import React, { useEffect, useState } from "react";
 import "./draggable-resizable.css"; // Import the existing CSS file
 import "./edit-mode-styles.css"; // Import the new edit mode styles
+import { createDashboardConfigTable, executeQuery, initDuckDB, selectAndIterateRecords } from "../utilities/duckdb-wasm"; // Import your query execution function
 
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Rnd } from "react-rnd";
 import { useUpload } from "../utilities/runtime-helpers";
-// import { initDuckDB, executeQuery } from "../utilities/duckdb-wasm"; // Import DuckDB functions
 import EditModal from "../components/EditModal";
-// import { runSampleQuery } from "../utilities/duckdb-queries" ; // Import query function
 import UploadModal from "../components/UploadModal";
 import ChartHeader from "../components/ChartHeader";
 import { uploadData } from "../utilities/dataUpload"; // Import upload function
@@ -18,15 +17,9 @@ import {
   pie_chart,
   scatter_chart,
   time_series_chart,
-} from "@/config";
+} from "../config";
 
-// (async function _initDuckDB() {
-//   await initDuckDB(1000); // Initialize DuckDB with 1000 rows
-
-//   console.log(" duckdb initialized with sample data ");
-// })();
-
-const dashboardConfig = [
+const _dashboardConfig = [
   {
     id: 1,
     title: "Sales Distribution",
@@ -41,71 +34,58 @@ const dashboardConfig = [
     type: "time",
     options: time_series_chart,
   },
-  { id: 5, title: "Market Share", type: "pie", option: pie_chart },
-]
+  { id: 5, title: "Market Share", type: "pie", options: pie_chart },
+];
 
 function MainComponent() {
+  const [dashboardConfig, setDashboardConfig] = useState(_dashboardConfig);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await initDuckDB();
+        await createDashboardConfigTable();
+        console.log("config from DB ", result);
+      } catch (error) {
+        console.error("Error fetching dashboard config:", error);
+      }
+      
+      const result = [];
+      await selectAndIterateRecords(result);
+      setDashboardConfig(result); // Assuming result is in the correct format
+    })()
+  }, []); // Empty dependency array ensures this runs once on mount
+
   const [searchTerm, setSearchTerm] = useState("");
   const [charts, setCharts] = useState(dashboardConfig);
   const [chartInstances, setChartInstances] = useState({});
   const [editingChart, setEditingChart] = useState(null); // State for editing chart
-  const [showChartTypes, setShowChartTypes] = useState(false);
-  const [selectedChart, setSelectedChart] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [layouts, setLayouts] = useState({});
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [availableData] = useState({
-    dimensions: [
-      { name: "Date", type: "time" },
-      { name: "Product", type: "string" },
-      { name: "Region", type: "string" },
-      { name: "Category", type: "string" },
-      { name: "Customer", type: "string" },
-      { name: "Channel", type: "string" },
-      { name: "Brand", type: "string" },
-      { name: "Campaign", type: "string" },
-    ],
-    metrics: [
-      { name: "Sales", type: "number" },
-      { name: "Revenue", type: "currency" },
-      { name: "Profit", type: "number" },
-      { name: "Units", type: "number" },
-      { name: "Customers", type: "number" },
-      { name: "Average Order Value", type: "currency" },
-      { name: "Conversion Rate", type: "percentage" },
-      { name: "Customer Lifetime Value", type: "currency" },
-    ],
-  });
-  const [uploadError, setUploadError] = useState(null);
-  const [upload, { loading }] = useUpload();
-  const [dataSource, setDataSource] = useState(null);
-  const [sqlQuery, setSqlQuery] = useState("");
-  const [queryResult, setQueryResult] = useState(null);
 
-  const [isEditMode, setIsEditMode] = useState(false); // New state for edit mode
-
-  const handleEditModeToggle = () => {
-    setIsEditMode((prev) => !prev);
-  };
-
+  
   useEffect(() => {
     const script = document.createElement("script");
     script.src =
-      "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js";
+    "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js";
     script.async = true;
     script.onload = () => {
       const instances = {};
-      charts.forEach((chart) => {
-        const element = document.getElementById(chart.id);
-        if (element) {
-          const instance = echarts.init(element);
-          instances[chart.id] = instance;
-          renderChart(instance, chart.type);
-        }
-      });
-      setChartInstances(instances);
+      if(charts && charts.length > 0){
+        charts.forEach((chart) => {
+          const element = document.getElementById(chart.id);
+          if (element) {
+            const instance = echarts.init(element);
+            instances[chart.id] = instance;
+            renderChart(instance, chart.type);
+          }
+        });
 
-      window.addEventListener("resize", handleResize);
+      }
+      setChartInstances(instances);
+      
+      // window.addEventListener("resize", handleResize);
       return () => {
         Object.values(instances).forEach((instance) => instance.dispose());
         window.removeEventListener("resize", handleResize);
@@ -114,7 +94,11 @@ function MainComponent() {
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
   }, []);
-
+  
+  // if(!dashboardConfig) {
+  //   return <p className="tw-head">Loading</p>
+  // }
+  
   const handleResize = (chartId, size) => {
     setLayouts((prev) => ({
       ...prev,
@@ -125,9 +109,9 @@ function MainComponent() {
       instance.resize();
     }
   };
-
+  
   const onDragEnd = (result) => {
-    if (!result.destination || !isEditMode) return; // Allow drag only in edit mode
+    if (!result.destination) return; // Allow drag only in edit mode
     const reorderedCharts = Array.from(charts);
     const [removed] = reorderedCharts.splice(result.source.index, 1);
     reorderedCharts.splice(result.destination.index, 0, removed);
@@ -156,38 +140,23 @@ function MainComponent() {
     }
   };
 
-  const handleSqlQuery = async () => {
-    if (!sqlQuery.trim()) return;
-
-    try {
-      // const result = await executeQuery(sqlQuery);
-      // setQueryResult(result); // Set the result to state
-      // console.log("Query Result:", result);
-    } catch (error) {
-      console.error("Failed to execute query:", error);
-    }
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-      const message = await uploadData(file);
-      console.log(message);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
   const handleChartEdit = (chartId, formData) => {
     const { title, type, options } = formData;
+
+    // Ensure options are parsed correctly
+    let parsedOptions;
+    try {
+      parsedOptions = JSON.parse(options);
+    } catch (error) {
+      console.error("Failed to parse ECharts options:", error);
+      return; // Exit if parsing fails
+    }
 
     const updatedChart = {
       ...charts.find((c) => c.id === chartId),
       title,
       type,
-      options: JSON.parse(options), // Parse the ECharts options
+      options: parsedOptions, // Use parsed options
     };
 
     setCharts((prev) => prev.map((c) => (c.id === chartId ? updatedChart : c)));
@@ -215,38 +184,12 @@ function MainComponent() {
   return (
     <div className="relative">
       <DragDropContext onDragEnd={onDragEnd}>
-        <button
-          className={`absolute top-4 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg transition-transform transform border-2 border-yellow-500 ${
-            isEditMode ? "scale-110" : ""
-          }`}
-          title="Edit Dashboard"
-          onClick={handleEditModeToggle}
-        >
-          <i className="fas fa-edit"></i>
-        </button>
-        {isEditMode && (
-          <button
-            className="absolute top-16 right-4 p-2 bg-red-500 text-white rounded-full border-2 border-yellow-500"
-            title="Exit Edit Mode"
-            onClick={handleEditModeToggle}
-          >
-            <i className="fas fa-times"></i>
-          </button>
-        )}
-        <button
-          className="absolute top-16 right-4 p-2 bg-green-500 text-white rounded-full border-2 border-yellow-500"
-          title="Shuffle Charts"
-          onClick={shuffleCharts}
-        >
-          <i className="fas fa-random"></i>
-        </button>
         <Droppable droppableId="droppable" direction="vertical">
           {(provided) => (
             <div
               className="p-4 bg-[#ffffff] flex flex-col"
               ref={provided.innerRef}
               {...provided.droppableProps}
-              onMouseLeave={() => setShowChartTypes(false)}
             >
               <div className="mb-4 flex gap-4">
                 <input
@@ -276,20 +219,7 @@ function MainComponent() {
                       {(provided) => (
                         <Rnd
                           className="bg-white rounded-lg shadow-lg"
-                          style={layouts[chart.id]}
-                          onResize={(e, direction, ref, delta, position) => {
-                            handleResize(chart.id, {
-                              width: ref.offsetWidth,
-                              height: ref.offsetHeight,
-                              ...position,
-                            });
-                          }}
-                          ref={(ref) => {
-                            provided.innerRef(ref);
-                            if (ref && ref.style) {
-                              ref.style.position = "relative"; // Ensure Rnd has a position
-                            }
-                          }}
+                          ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
                         >
