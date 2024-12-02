@@ -1,14 +1,19 @@
+import { executeQuery, selectAndIterateRecords } from '@/utilities/duckdb-wasm';
 import React from 'react';
 
-const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDashboard, generatePDF, option, setEditingChartOption }) => (
-  <div className="flex justify-between items-center p-2 bg-[#f8f9fa] rounded-t">
+const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDashboard, generatePDF, option, setEditingChartData }) => {
+  return (<div className="flex justify-between items-center p-2 bg-[#f8f9fa] rounded-t">
     <h3 className="font-roboto text-lg">{title}</h3>
     <div className="flex gap-4">
       <div className="flex flex-col items-center">
         <i
           className={`fas fa fa-edit text-gray-400 cursor-not-allowed h-7 w-7`}
-          onClick={() => {
+          onClick={async () => {
+            let chartId = event.target.parentElement.parentElement.parentElement.nextElementSibling.getAttribute('id');
             setEditingChart(chartId);
+            const chartData = [];
+            await selectAndIterateRecords(`select * from dashboard_config where id = '${chartId}'`,chartData);
+            setEditingChartData(chartData[0]);
             setShowEditModal(true);
           }}
         ></i>
@@ -53,6 +58,6 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
       </div>
     </div>
   </div>
-);
+)};
 
 export default ChartHeader;

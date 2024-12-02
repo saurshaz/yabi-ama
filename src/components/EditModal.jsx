@@ -1,6 +1,7 @@
+import { executeQuery } from '@/utilities/duckdb-wasm';
 import React from 'react';
 
-const EditModal = ({ charts, editingChart, setEditingChart, setShowEditModal, handleChartEdit }) => (
+const EditModal = ({ charts, editingChart, setEditingChart, setShowEditModal, handleChartEdit, editChartData, setEditingChartData }) => (
 
   
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -11,30 +12,30 @@ const EditModal = ({ charts, editingChart, setEditingChart, setShowEditModal, ha
           <label className="block mb-2">Chart Title</label>
           <input
             type="text"
-            value={editingChart?.title}
-            onChange={(e) => setEditingChart({ ...editingChart, title: e.target.value })}
+            value={editChartData?.title}
+            onChange={(e) => setEditingChartData({ ...editChartData, title: e.target.value })}
             className="w-full p-2 border rounded"
           />
         </div>
         <div>
           <label className="block mb-2">Chart Type</label>
           <select
-            value={editingChart?.type}
-            onChange={(e) => setEditingChart({ ...editingChart, type: e.target.value })}
+            value={editChartData?.options?.series?.type || 'bar'}
+            onChange={(e) => setEditingChartData({ ...editChartData, type: e.target.value })}
             className="w-full p-2 border rounded"
           >
-            <option value="scatter">Scatter</option>
-            <option value="line">Line</option>
-            <option value="bar">Bar</option>
-            <option value="time">Time</option>
-            <option value="pie">Pie</option>
+            <option value="scatter">scatter</option>
+            <option value="line">line</option>
+            <option value="bar">bar</option>
+            <option value="time">time</option>
+            <option value="pie">pie</option>
           </select>
         </div>
         <div>
           <label className="block mb-2">ECharts Options</label>
           <textarea
-            value={editingChart?.options}
-            onChange={(e) => setEditingChart({ ...editingChart, options: e.target.value })}
+            value={editChartData?.options}
+            onChange={(e) => setEditingChartData({ ...editChartData, options: e.target.value })}
             className="w-full p-2 border rounded"
             placeholder="Paste ECharts options here..."
             rows={4}
@@ -43,7 +44,7 @@ const EditModal = ({ charts, editingChart, setEditingChart, setShowEditModal, ha
         <div className="flex justify-end gap-2">
           <button
             onClick={() => {
-              setEditingChart(null); // Reset editingChart on cancel
+              setEditingChartData(null); // Reset editingChart on cancel
               setShowEditModal(false);
             }}
             className="px-4 py-2 border rounded"
@@ -51,8 +52,10 @@ const EditModal = ({ charts, editingChart, setEditingChart, setShowEditModal, ha
             Cancel
           </button>
           <button
-            onClick={() => {
-              handleChartEdit(editingChart.id, editingChart);
+            onClick={async () => {
+              // handleChartEdit(editChartData.id, editChartData);
+              await executeQuery(`update dashboard_config set options='${JSON.stringify(editChartData?.options || {})}', title='${editChartData?.title}'  where id='${editChartData?.id}'`);
+              handleChartEdit(editChartData?.id, editChartData);
               setShowEditModal(false);
             }}
             className="px-4 py-2 bg-blue-500 text-white rounded"

@@ -277,15 +277,11 @@ export const insertDummyData = async () => {
 };
 
 // Function to select all records from the dashboard_config table and iterate over them
-export const selectAndIterateRecords = async (_result=[]) => {
-  const selectQuery = `
-    SELECT * FROM dashboard_config;
-  `;
-
+export const selectAndIterateRecords = async (selectQuery, _result=[]) => {
   try {
     const result = await executeQuery(selectQuery);
     result.toArray().forEach(row => {
-      _result.push(row)
+      _result.push(row?.toJSON())
       console.log(`ID: ${row.id}, Title: ${row.title}, Owner: ${row.owner}, Options: ${JSON.stringify(row.options)}`);
     });
     

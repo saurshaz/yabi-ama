@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import "./draggable-resizable.css"; // Import the existing CSS file
 import "./edit-mode-styles.css"; // Import the new edit mode styles
-import { createDashboardConfigTable, executeQuery, initDuckDB, selectAndIterateRecords } from "../utilities/duckdb-wasm"; // Import your query execution function
+import { createDashboardConfigTable, initDuckDB, selectAndIterateRecords } from "../utilities/duckdb-wasm"; // Import your query execution function
 
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { Rnd } from "react-rnd";
@@ -38,22 +38,26 @@ const _dashboardConfig = [
 ];
 
 function MainComponent() {
-  const [dashboardConfig, setDashboardConfig] = useState(_dashboardConfig);
+  const [dashboardConfig, setDashboardConfig] = useState([]);
+  const [loading, setLoading] = useState(true); // Loading state
 
   useEffect(() => {
     (async () => {
       try {
         await initDuckDB();
         await createDashboardConfigTable();
-        console.log("config from DB ", result);
+        const result = [];
+        await selectAndIterateRecords(`
+          SELECT * FROM dashboard_config;
+        `,result);
+        setDashboardConfig(result);
+        setCharts(result); // Assuming result is in the correct format
       } catch (error) {
         console.error("Error fetching dashboard config:", error);
+      } finally {
+        setLoading(false); // Set loading to false after fetching
       }
-      
-      const result = [];
-      await selectAndIterateRecords(result);
-      setDashboardConfig(result); // Assuming result is in the correct format
-    })()
+    })();
   }, []); // Empty dependency array ensures this runs once on mount
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,42 +67,42 @@ function MainComponent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [layouts, setLayouts] = useState({});
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editChartData, setEditingChartData] = React.useState({});
 
-  
   useEffect(() => {
     const script = document.createElement("script");
     script.src =
-    "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js";
+      "https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js";
     script.async = true;
     script.onload = () => {
       const instances = {};
-      if(charts && charts.length > 0){
+      if (charts && charts.length > 0) {
         charts.forEach((chart) => {
+          // chart = chart.toJSON()
           const element = document.getElementById(chart.id);
           if (element) {
             const instance = echarts.init(element);
             instances[chart.id] = instance;
-            renderChart(instance, chart.type);
+            if (typeof(chart?.options) === 'string') {
+              renderChart(instance, JSON.parse(chart.options));
+            } else {
+              renderChart(instance, chart.options);
+              
+            }
           }
         });
-
       }
       setChartInstances(instances);
-      
-      // window.addEventListener("resize", handleResize);
+
       return () => {
         Object.values(instances).forEach((instance) => instance.dispose());
-        window.removeEventListener("resize", handleResize);
       };
     };
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
-  }, []);
-  
-  // if(!dashboardConfig) {
-  //   return <p className="tw-head">Loading</p>
-  // }
-  
+  }, [charts]);
+
   const handleResize = (chartId, size) => {
     setLayouts((prev) => ({
       ...prev,
@@ -109,7 +113,7 @@ function MainComponent() {
       instance.resize();
     }
   };
-  
+
   const onDragEnd = (result) => {
     if (!result.destination) return; // Allow drag only in edit mode
     const reorderedCharts = Array.from(charts);
@@ -118,35 +122,16 @@ function MainComponent() {
     setCharts(reorderedCharts);
   };
 
-  const renderChart = (instance, type) => {
-    const options = getChartOptions(type);
+  const renderChart = (instance, options) => {
     instance.setOption(options);
   };
 
-  const getChartOptions = (type) => {
-    switch (type) {
-      case "scatter":
-        return scatter_chart;
-      case "line":
-        return line_chart;
-      case "bar":
-        return bar_chart;
-      case "time":
-        return time_series_chart;
-      case "pie":
-        return pie_chart;
-      default:
-        return {};
-    }
-  };
-
-  const handleChartEdit = (chartId, formData) => {
-    const { title, type, options } = formData;
+  const handleChartEdit = (chartId, editChartData) => {
 
     // Ensure options are parsed correctly
     let parsedOptions;
     try {
-      parsedOptions = JSON.parse(options);
+      parsedOptions = JSON.parse(editChartData?.options);
     } catch (error) {
       console.error("Failed to parse ECharts options:", error);
       return; // Exit if parsing fails
@@ -154,8 +139,8 @@ function MainComponent() {
 
     const updatedChart = {
       ...charts.find((c) => c.id === chartId),
-      title,
-      type,
+      title: editChartData?.title,
+      type: parsedOptions?.series?.title || 'bar',
       options: parsedOptions, // Use parsed options
     };
 
@@ -163,7 +148,7 @@ function MainComponent() {
 
     const instance = chartInstances[chartId];
     if (instance) {
-      renderChart(instance, updatedChart.type);
+      renderChart(instance, parsedOptions);
     }
 
     // Send chart updated event
@@ -183,73 +168,82 @@ function MainComponent() {
 
   return (
     <div className="relative">
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="droppable" direction="vertical">
-          {(provided) => (
-            <div
-              className="p-4 bg-[#ffffff] flex flex-col"
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-            >
-              <div className="mb-4 flex gap-4">
-                <input
-                  type="text"
-                  placeholder="Search charts..."
-                  className="w-full p-2 border rounded font-roboto"
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
-                >
-                  Upload Dataset
-                </button>
+      {loading ? ( // Show spinner while loading
+        <div className="flex justify-center items-center h-full">
+          <div className="loader"></div> {/* Add your spinner here */}
+        </div>
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="droppable" direction="vertical">
+            {(provided) => (
+              <div
+                className="p-4 bg-[#ffffff] flex flex-col"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+              >
+                <div className="mb-4 flex gap-4">
+                  <input
+                    type="text"
+                    placeholder="Search charts..."
+                    className="w-full p-2 border rounded font-roboto"
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <button
+                    onClick={() => setShowUploadModal(true)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded"
+                  >
+                    Upload Dataset
+                  </button>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {charts
+                    .filter((chart) => {
+                      return chart.title.toLowerCase().includes(searchTerm.toLowerCase())
+                    })
+                    .map((chart, index) => (
+                      <Draggable
+                        key={chart.id}
+                        draggableId={chart.id}
+                        index={index}
+                      >
+                        {(provided) => (
+                          <Rnd
+                            className="bg-white rounded-lg shadow-lg"
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                          >
+                            <ChartHeader
+                              charts={charts}
+                              title={chart.title}
+                              chartId={chart.id}
+                              setEditingChart={setEditingChart}
+                              setShowEditModal={setShowEditModal}
+                              setEditingChartData={setEditingChartData}
+                            />
+                            <div id={chart['id']} className="chart-frame h-[300px] w-full"></div>
+                          </Rnd>
+                        )}
+                      </Draggable>
+                    ))}
+                  {provided.placeholder}
+                </div>
+                {showEditModal && (
+                  <EditModal
+                    setEditingChart={setEditingChart}
+                    editChartData={editChartData}
+                    editingChart={editingChart}
+                    handleChartEdit={handleChartEdit}
+                    setShowEditModal={setShowEditModal}
+                    setEditingChartData={setEditingChartData}
+                  />
+                )}
+                {showUploadModal && <UploadModal />}
               </div>
-              <div className="flex flex-col gap-4">
-                {charts
-                  .filter((chart) =>
-                    chart.title.toLowerCase().includes(searchTerm.toLowerCase())
-                  )
-                  .map((chart, index) => (
-                    <Draggable
-                      key={chart.id}
-                      draggableId={String(chart.id)}
-                      index={index}
-                    >
-                      {(provided) => (
-                        <Rnd
-                          className="bg-white rounded-lg shadow-lg"
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                        >
-                          <ChartHeader
-                            charts={charts}
-                            title={chart.title}
-                            chartId={chart.id}
-                            setEditingChart={setEditingChart}
-                            setShowEditModal={setShowEditModal}
-                          />
-                          <div id={chart.id} className="h-[300px] w-full"></div>
-                        </Rnd>
-                      )}
-                    </Draggable>
-                  ))}
-                {provided.placeholder}
-              </div>
-              {showEditModal && (
-                <EditModal
-                  setEditingChart={setEditingChart}
-                  editingChart={editingChart}
-                  handleChartEdit={handleChartEdit}
-                  setShowEditModal={setShowEditModal}
-                />
-              )}
-              {showUploadModal && <UploadModal />}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+            )}
+          </Droppable>
+        </DragDropContext>
+      )}
     </div>
   );
 }
