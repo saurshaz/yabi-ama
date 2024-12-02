@@ -1,0 +1,12 @@
+@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'; /* Import Font Awesome */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+i.fas {
+    font-family: '__Inter_d65c78', '__Inter_Fallback_d65c78';
+    height: 7;width: 7;  
+    
+    
+    
+}

@@ -1,0 +1,23 @@
+@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'; /* Import Font Awesome */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add styles for draggable and resizable elements */
+.rnd {
+  border: 2px dashed #007bff; /* Dashed border for draggable elements */
+  transition: border-color 0.3s;
+}
+
+.rnd:hover {
+  border-color: #0056b3; /* Darker border on hover */
+}
+
+/* Styles for the edit mode button */
+button {
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}

@@ -1,0 +1,16 @@
+@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'; /* Import Font Awesome */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add styles for draggable and resizable elements */
+.rnd {
+  border: 1px solid #ccc;
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.3s;
+}
+
+.rnd:hover {
+  border-color: #007bff;
+}
