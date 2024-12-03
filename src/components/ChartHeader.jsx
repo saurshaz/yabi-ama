@@ -7,7 +7,7 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
     <div className="flex gap-4">
       <div className="flex flex-col items-center">
         <i
-          className={`fas fa fa-edit text-gray-400 cursor-not-allowed h-7 w-7`}
+          className={`fas fa fa-edit text-gray-400 h-7 w-7`}
           onClick={async () => {
             let chartId = event.target.parentElement.parentElement.parentElement.nextElementSibling.getAttribute('id');
             setEditingChart(chartId);
@@ -21,7 +21,7 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
       </div>
       <div className="flex flex-col items-center">
         <i
-          className={`fas fa fa-trash text-gray-400 cursor-not-allowed h-7 w-7`}
+          className={`fas fa fa-trash text-gray-400 cursor-pointer h-7 w-7`}
           onClick={() => {
             // Add delete functionality here
           }}
@@ -30,7 +30,7 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
       </div>
       <div className="flex flex-col items-center">
         <i
-          className="fas fa fa-gear text-gray-400 cursor-not-allowed h-7 w-7"
+          className="fas fa fa-gear text-gray-400 cursor-pointer h-7 w-7"
           onClick={() => {
             // Save chart functionality will be implemented in page.jsx
           }}
@@ -40,7 +40,7 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
       <div className="relative flex flex-col items-center">
         <i
           aria-describedby="tt-insights"
-          className="fas fa fa-info text-gray-400 cursor-not-allowed h-7 w-7"
+          className="fas fa fa-info text-gray-400 cursor-pointer h-7 w-7"
           onMouseEnter={() => {
             // setShowChartTypes(true);
             // setSelectedChart(chartId);
@@ -51,7 +51,7 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
       <span className="text-xs hidden" id="tt-insights">show chart insights</span>
       <div className="flex flex-col items-center">
         <i
-          className="fas fa fa-save text-gray-400 cursor-not-allowed h-7 w-7"
+          className="fas fa fa-save text-gray-400 cursor-pointer h-7 w-7"
           onClick={() => {
             saveChart(chartId);
           }}

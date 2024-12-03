@@ -15,11 +15,12 @@ import { useUpload } from "../utilities/runtime-helpers";
 import { uploadData } from "../utilities/dataUpload"; // Import upload function
 import { MasonryLayout } from "./MasonryLayoutContainer";
 
-
 const DashboardContainer = ({ dashboard_id = 1 }) => {
   const [dashboardConfig, setDashboardConfig] = useState([]);
   const [loading, setLoading] = useState(true); // Loading state
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState( `
+    SELECT * FROM dashboard_config;
+  `);
   const [charts, setCharts] = useState(dashboardConfig);
   const [chartInstances, setChartInstances] = useState({});
   const [editingChart, setEditingChart] = useState(null); // State for editing chart
@@ -27,6 +28,7 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
   const [layouts, setLayouts] = useState({});
   const [editChartData, setEditingChartData] = useState({});
   const [isEditing, setIsEditing] = useState(false); // State for edit mode
+  const [sqlQuery, setSqlQuery] = useState("select * from dashboard_config;"); // Stat
 
   useEffect(() => {
     (async () => {
@@ -79,6 +81,15 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
   }, [charts]);
+
+  const executeSQLQuery = async () => {
+    try {
+      const result = await selectAndIterateRecords(sqlQuery); // Execute the SQL query
+      console.log("Query Result:", result); // Log the result to the console
+    } catch (error) {
+      console.error("Error executing SQL query:", error);
+    }
+  };
   const onDragEnd = (result) => {
     if (!result.destination || !isEditing) return; // Allow drag only in edit mode
     const reorderedCharts = Array.from(charts);
@@ -142,22 +153,6 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
     setCharts(shuffledCharts);
   };
 
-  const getChartGrid = (charts, chart) => {
-    return (
-      <div className="h-auto max-w-full rounded-lg">
-        <ChartHeader
-          charts={charts}
-          title={chart.title}
-          chartId={chart.id}
-          setEditingChart={setEditingChart}
-          setShowEditModal={setShowEditModal}
-          setEditingChartData={setEditingChartData}
-        />
-        <div id={chart["id"]} className="chart-frame h-[300px] w-full"></div>
-      </div>
-    );
-  };
-
   return (
     <div className="relative">
       <div className="mb-4 flex gap-4">
@@ -180,6 +175,23 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
           Edit
         </button>
       </div>
+      <div className="h-auto max-w-full rounded-lg">
+        <div className="mb-4">
+          <textarea
+            value={sqlQuery}
+            onChange={(e) => setSqlQuery(e.target.value)}
+            className="w-full p-2 border rounded"
+            placeholder="Enter SQL query..."
+            rows={4}
+          />
+          <button
+            onClick={executeSQLQuery}
+            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Execute Query
+          </button>
+        </div>
+      </div>
       {loading ? ( // Show spinner while loading
         <div className="flex justify-center items-center h-full">
           <div className="loader"></div> {/* Add your spinner here */}
@@ -194,36 +206,19 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
                 {...provided.droppableProps}
               >
                 <div className="flex flex-col gap-4">
-                  {/* {charts
+                  <MasonryLayout
+                    charts={charts
                     .filter((chart) => {
                       return chart.title
                         .toLowerCase()
                         .includes(searchTerm.toLowerCase());
-                    })
-                    .map((chart, index) => (
-                      <Draggable
-                        key={chart.id}
-                        draggableId={chart.id}
-                        index={index}
-                        isDragDisabled={!isEditing}
-                      >
-                        {(provided) => (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="grid gap-4">
-                                <div>
-                                  {getChartGrid()}
-                                </div>
-                              </div>
-                            </div>
-                        )}
-                      </Draggable>
-                    ))} */}
-                  <MasonryLayout charts={charts} setEditingChart={setEditingChart}
+                    })}
+                    setEditingChart={setEditingChart}
                     setShowEditModal={setShowEditModal}
                     setEditingChartData={setEditingChartData}
                     chartInstances={chartInstances}
                     setLayouts={setLayouts}
-                     />
+                  />
 
                   {provided.placeholder}
                 </div>
