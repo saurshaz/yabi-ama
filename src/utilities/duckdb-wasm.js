@@ -1,3 +1,4 @@
+"use client";
 import * as DuckDB from '@duckdb/duckdb-wasm';
 
 let duckDBInstance;
