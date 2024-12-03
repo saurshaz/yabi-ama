@@ -21,7 +21,7 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
       </div>
       <div className="flex flex-col items-center">
         <i
-          className={`fas fa-trash text-gray-400 cursor-not-allowed h-7 w-7`}
+          className={`fas fa fa-trash text-gray-400 cursor-not-allowed h-7 w-7`}
           onClick={() => {
             // Add delete functionality here
           }}
@@ -30,26 +30,28 @@ const ChartHeader = ({ title, chartId, setEditingChart, setShowEditModal, saveDa
       </div>
       <div className="flex flex-col items-center">
         <i
-          className="fas fa-save text-gray-400 cursor-pointer h-7 w-7"
+          className="fas fa fa-gear text-gray-400 cursor-not-allowed h-7 w-7"
           onClick={() => {
             // Save chart functionality will be implemented in page.jsx
           }}
         ></i>
-        <span className="text-xs">Save</span>
+        <span className="text-xs">Switch</span>
       </div>
       <div className="relative flex flex-col items-center">
         <i
-          className="fas fa-chart-line text-green-500 cursor-pointer h-7 w-7"
+          aria-describedby="tt-insights"
+          className="fas fa fa-info text-gray-400 cursor-not-allowed h-7 w-7"
           onMouseEnter={() => {
             // setShowChartTypes(true);
             // setSelectedChart(chartId);
           }}
+          title="insights"
         ></i>
-        <span className="text-xs">Switch</span>
       </div>
+      <span className="text-xs hidden" id="tt-insights">show chart insights</span>
       <div className="flex flex-col items-center">
         <i
-          className="fas fa-save text-gray-400 cursor-pointer h-7 w-7"
+          className="fas fa fa-save text-gray-400 cursor-not-allowed h-7 w-7"
           onClick={() => {
             saveChart(chartId);
           }}

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from "react";
 import ChartHeader from "@/components/ChartHeader";
 import EditModal from "@/components/EditModal";
 import UploadModal from "@/components/UploadModal";
@@ -8,18 +8,13 @@ import { Route, BrowserRouter as Router, Routes } from "react-router-dom"; // Im
 import "./draggable-resizable.css"; // Import the existing CSS file
 import "./edit-mode-styles.css"; // Import the new edit mode styles
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import { selectAndIterateRecords } from '@/utilities/duckdb-wasm';
+import { initDuckDB, selectAndIterateRecords } from "@/utilities/duckdb-wasm";
 
 import { Rnd } from "react-rnd";
 import { useUpload } from "../utilities/runtime-helpers";
 import { uploadData } from "../utilities/dataUpload"; // Import upload function
-import {
-  bar_chart,
-  line_chart,
-  pie_chart,
-  scatter_chart,
-  time_series_chart,
-} from "../config";
+import { MasonryLayout } from "./MasonryLayoutContainer";
+
 
 const DashboardContainer = ({ dashboard_id = 1 }) => {
   const [dashboardConfig, setDashboardConfig] = useState([]);
@@ -30,10 +25,9 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
   const [editingChart, setEditingChart] = useState(null); // State for editing chart
   const [showEditModal, setShowEditModal] = useState(false);
   const [layouts, setLayouts] = useState({});
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const [editChartData, setEditingChartData] = useState({});
   const [isEditing, setIsEditing] = useState(false); // State for edit mode
-  console.log('sss')
+
   useEffect(() => {
     (async () => {
       try {
@@ -46,6 +40,7 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
         );
         setDashboardConfig(result);
         setCharts(result); // Assuming result is in the correct format
+        setLoading(false); // Set loading to false after fetching
       } catch (error) {
         console.error("Error fetching dashboard config:", error);
       } finally {
@@ -84,23 +79,25 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
     document.body.appendChild(script);
     return () => document.body.removeChild(script);
   }, [charts]);
-
-  const handleResize = (chartId, size) => {
-    setLayouts((prev) => ({
-      ...prev,
-      [chartId]: size,
-    }));
-    const instance = chartInstances[chartId];
-    if (instance) {
-      instance.resize();
-    }
-  };
-
   const onDragEnd = (result) => {
     if (!result.destination || !isEditing) return; // Allow drag only in edit mode
     const reorderedCharts = Array.from(charts);
     const [removed] = reorderedCharts.splice(result.source.index, 1);
     reorderedCharts.splice(result.destination.index, 0, removed);
+
+    console.log("  onDragEnd", result);
+
+    // if (draggableRef.current) {
+    //   // Set initial position using CSS transform
+    //   draggableRef.current.style.transform = "translate(100px, 100px)";
+    //   const rect = draggableRef.current.getBoundingClientRect();
+    //   console.log("Top:", rect.top);
+    //   console.log("Right:", rect.right);
+    //   console.log("Bottom:", rect.bottom);
+    //   console.log("Left:", rect.left);
+    //   console.log("Width:", rect.width);
+    //   console.log("Height:", rect.height);
+    // }
     setCharts(reorderedCharts);
   };
 
@@ -145,8 +142,44 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
     setCharts(shuffledCharts);
   };
 
+  const getChartGrid = (charts, chart) => {
+    return (
+      <div className="h-auto max-w-full rounded-lg">
+        <ChartHeader
+          charts={charts}
+          title={chart.title}
+          chartId={chart.id}
+          setEditingChart={setEditingChart}
+          setShowEditModal={setShowEditModal}
+          setEditingChartData={setEditingChartData}
+        />
+        <div id={chart["id"]} className="chart-frame h-[300px] w-full"></div>
+      </div>
+    );
+  };
+
   return (
     <div className="relative">
+      <div className="mb-4 flex gap-4">
+        <input
+          type="text"
+          placeholder="Search charts..."
+          className="w-full p-2 border rounded font-roboto"
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <button
+          onClick={() => false}
+          className="px-4 py-2 bg-gray-500 text-white rounded"
+        >
+          Save
+        </button>
+        <button
+          onClick={() => false}
+          className="px-4 py-2 bg-green-500 text-white rounded"
+        >
+          Edit
+        </button>
+      </div>
       {loading ? ( // Show spinner while loading
         <div className="flex justify-center items-center h-full">
           <div className="loader"></div> {/* Add your spinner here */}
@@ -160,22 +193,8 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
                 ref={provided.innerRef}
                 {...provided.droppableProps}
               >
-                <div className="mb-4 flex gap-4">
-                  <input
-                    type="text"
-                    placeholder="Search charts..."
-                    className="w-full p-2 border rounded font-roboto"
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <button
-                    onClick={() => setShowUploadModal(true)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded"
-                  >
-                    Upload Dataset
-                  </button>
-                </div>
                 <div className="flex flex-col gap-4">
-                  {charts
+                  {/* {charts
                     .filter((chart) => {
                       return chart.title
                         .toLowerCase()
@@ -186,43 +205,38 @@ const DashboardContainer = ({ dashboard_id = 1 }) => {
                         key={chart.id}
                         draggableId={chart.id}
                         index={index}
+                        isDragDisabled={!isEditing}
                       >
                         {(provided) => (
-                          <Rnd
-                            className="bg-white rounded-lg shadow-lg"
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                          >
-                            <ChartHeader
-                              charts={charts}
-                              title={chart.title}
-                              chartId={chart.id}
-                              setEditingChart={setEditingChart}
-                              setShowEditModal={setShowEditModal}
-                              setEditingChartData={setEditingChartData}
-                            />
-                            <div
-                              id={chart["id"]}
-                              className="chart-frame h-[300px] w-full"
-                            ></div>
-                          </Rnd>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="grid gap-4">
+                                <div>
+                                  {getChartGrid()}
+                                </div>
+                              </div>
+                            </div>
                         )}
                       </Draggable>
-                    ))}
+                    ))} */}
+                  <MasonryLayout charts={charts} setEditingChart={setEditingChart}
+                    setShowEditModal={setShowEditModal}
+                    setEditingChartData={setEditingChartData}
+                    chartInstances={chartInstances}
+                    setLayouts={setLayouts}
+                     />
+
                   {provided.placeholder}
                 </div>
                 {showEditModal && (
                   <EditModal
                     setEditingChart={setEditingChart}
+                    setShowEditModal={setShowEditModal}
+                    setEditingChartData={setEditingChartData}
                     editChartData={editChartData}
                     editingChart={editingChart}
                     handleChartEdit={handleChartEdit}
-                    setShowEditModal={setShowEditModal}
-                    setEditingChartData={setEditingChartData}
                   />
                 )}
-                {showUploadModal && <UploadModal />}
               </div>
             )}
           </Droppable>

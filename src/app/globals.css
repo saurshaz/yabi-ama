@@ -1,12 +1,48 @@
-@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'; /* Import Font Awesome */
+@import "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"; /* Import Font Awesome */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 i.fas {
-    font-family: '__Inter_d65c78', '__Inter_Fallback_d65c78';
-    height: 7;width: 7;  
-    
-    
-    
+  height: 7px;
+  width: 7px;
+}
+
+
+.spinner {
+  border: 16px solid #f3f3f3; /* Light grey */
+  border-top: 16px solid #3498db; /* Blue */
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  animation: spin 2s linear infinite;
+  position: absolute;
+  left: 45%;
+  top: 45%;
+}
+ 
+@keyframes spin {
+  0 % {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #06040463; /* Semi-transparent overlay */
+  z-index: 999; /* Ensure overlay is on top */
+}
+
+
+#chart-frame {
+  position: relative;
+  margin-top: '5%';
+  margin-left: '5%';
 }

@@ -282,7 +282,7 @@ export const selectAndIterateRecords = async (selectQuery, _result=[]) => {
   try {
     const result = await executeQuery(selectQuery);
     result.toArray().forEach(row => {
-      _result.push(row?.toJSON())
+    _result.push(row?.toJSON())
       console.log(`ID: ${row.id}, Title: ${row.title}, Owner: ${row.owner}, Options: ${JSON.stringify(row.options)}`);
     });
     
@@ -292,10 +292,10 @@ export const selectAndIterateRecords = async (selectQuery, _result=[]) => {
   }
 };
 
-// Example usage
-(async () => {
-  await initDuckDB();
-  await createDashboardConfigTable();
-  await insertDummyData();
-  await selectAndIterateRecords();
-})();
+// // Example usage
+// (async () => {
+//   await initDuckDB();
+//   await createDashboardConfigTable();
+//   await insertDummyData();
+//   await selectAndIterateRecords();
+// })();
