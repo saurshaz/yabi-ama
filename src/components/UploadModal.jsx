@@ -30,6 +30,7 @@ const CSVUploader = () => {
   };
 
   const handleUpload = async () => {
+    // if (!file || !db) return;
 
     const reader = new FileReader();
     reader.onload = async (event) => {
@@ -42,6 +43,12 @@ const CSVUploader = () => {
         return `(${Object.values(row).map((val) => `'${val}'`).join(', ')})`;
       }).join(', ');
 
+      // // Read the file contents
+      // const fileContents = await readFile(file);
+
+      // const createTableQuery = `
+      //   CREATE TABLE stocks AS SELECT * FROM read_csv_auto(${file.name});
+      // `;
       await executeQuery(`CREATE TABLE ${tableName} (${columns});`);
       await executeQuery(`INSERT INTO ${tableName} VALUES ${values};`);
 
