@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 const dummyData = [
   { id: 1, name: 'Dashboard 1', dateCreated: '2023-01-01', owner: 'Alice' },
@@ -41,7 +41,7 @@ const ListDashboards = () => {
           {currentItems.map((dashboard) => (
             <tr key={dashboard.id}>
               <td className="border px-4 py-2">
-                <Link to={`/dashboard?id=${dashboard.id}`} className="text-blue-500 hover:underline">
+                <Link href={`/app/${dashboard.id}`} className="text-blue-500 hover:underline">
                   {dashboard.name}
                 </Link>
               </td>

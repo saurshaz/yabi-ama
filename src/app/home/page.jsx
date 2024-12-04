@@ -1,8 +1,10 @@
+"use client";
 import UploadModal from "@/components/UploadModal";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
+import ListDashboards from "./ListDashboards";
 
-const LandingPage = ({initDb = () => {}}) => {
+const LandingPage = ({initDb = () => {}, setSearchTerm = ''}) => {
   const [loading, setLoading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [sqlQuery, setSqlQuery] = useState('');
@@ -28,28 +30,22 @@ const LandingPage = ({initDb = () => {}}) => {
       </div>
       <div className="space-y-2">
         <Link
-          to="/add-dashboard"
+          href="/add"
           className="px-4 py-2 bg-blue-500 text-white rounded"
         >
-          Add Dashboard
+          Add
         </Link>
         <Link
-          to="/edit-dashboard"
+          href="/edit"
           className="px-4 py-2 bg-green-500 text-white rounded"
         >
-          Edit Dashboard
+          Edit
         </Link>
         <Link
-          to="/list-dashboards"
-          className="px-4 py-2 bg-yellow-500 text-white rounded"
-        >
-          List Saved Dashboards
-        </Link>
-        <Link
-          to="/dashboard"
+          href="/app"
           className="px-4 py-2 bg-gray-500 text-white rounded"
         >
-          Dashboard
+          App
         </Link>
       </div>
     </div>

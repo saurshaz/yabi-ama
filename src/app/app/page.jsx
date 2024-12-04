@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import ChartHeader from "@/components/ChartHeader";
 import EditModal from "@/components/EditModal";
 import UploadModal from "@/components/UploadModal";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom"; // Import Router and Routes
+
 // import { createDashboardConfigTable, initDuckDB } from "../utilities/duckdb-wasm"; // Import your query execution function
 import "./draggable-resizable.css"; // Import the existing CSS file
 import "./edit-mode-styles.css"; // Import the new edit mode styles
@@ -11,16 +11,14 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { initDuckDB, selectAndIterateRecords } from "@/utilities/duckdb-wasm";
 
 import { Rnd } from "react-rnd";
-import { useUpload } from "../utilities/runtime-helpers";
-import { uploadData } from "../utilities/dataUpload"; // Import upload function
+import { useUpload } from "@/utilities/runtime-helpers";
+import { uploadData } from "@/utilities/dataUpload"; // Import upload function
 import { MasonryLayout } from "./MasonryLayoutContainer";
 
 const DashboardContainer = ({ dashboard_id = 1 }) => {
   const [dashboardConfig, setDashboardConfig] = useState([]);
   const [loading, setLoading] = useState(true); // Loading state
-  const [searchTerm, setSearchTerm] = useState( `
-    SELECT * FROM dashboard_config;
-  `);
+  const [searchTerm, setSearchTerm] = useState(``);
   const [charts, setCharts] = useState(dashboardConfig);
   const [chartInstances, setChartInstances] = useState({});
   const [editingChart, setEditingChart] = useState(null); // State for editing chart

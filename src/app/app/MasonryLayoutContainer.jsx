@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import ChartHeader from "@/components/ChartHeader";
 import EditModal from "@/components/EditModal";
 import UploadModal from "@/components/UploadModal";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom"; // Import Router and Routes
 // import { createDashboardConfigTable, initDuckDB } from "../utilities/duckdb-wasm"; // Import your query execution function
 import "./draggable-resizable.css"; // Import the existing CSS file
 import "./edit-mode-styles.css"; // Import the new edit mode styles
@@ -11,8 +10,8 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { initDuckDB, selectAndIterateRecords } from "@/utilities/duckdb-wasm";
 
 import { Rnd } from "react-rnd";
-import { useUpload } from "../utilities/runtime-helpers";
-import { uploadData } from "../utilities/dataUpload"; // Import upload function
+import { useUpload } from "@/utilities/runtime-helpers";
+import { uploadData } from "@/utilities/dataUpload"; // Import upload function
 
 
 export const MasonryLayout = ({
